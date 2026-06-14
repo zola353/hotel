@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ዘመናዊ የሆቴል መቆጣጠሪያ እና POS ሲስተም</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* Lemon text-orange-500 linear gradient theme */
+        .lemon-orange-bg {
+            background: linear-gradient(135deg, #d4fc79 0%, #fbc531 100%);
+        }
+        .marquee-container {
+            overflow: hidden;
+            white-space: nowrap;
+            background-color: #2f3640;
+            color: #fff;
+            padding: 12px 0;
+            font-weight: bold;
+            font-size: 1.1rem;
+            border-bottom: 3px solid #fbc531;
+        }
+        .marquee-text {
+            display: inline-block;
+            animation: marquee 25s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translate3d(100%, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased">
+
+    <div class="marquee-container">
+        <div id="dynamicMarquee" class="marquee-text">
+            እንኳን ወደ ሆቴላችን በደህና መጡ! ጥራት ያላቸውን ምግቦችና መጠጦች በፍጥነት እናቀርባለን።
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto p-4">
+        
+        <div class="flex flex-wrap justify-center gap-2 mb-6 bg-white p-3 rounded-xl shadow-md border">
+            <button onclick="switchRole('owner')" id="btn-owner" class="px-5 py-2.5 rounded-lg font-bold bg-amber-500 text-white transition-all">🔑 ባለቤት (Owner)</button>
+            <button onclick="switchRole('barman')" id="btn-barman" class="px-5 py-2.5 rounded-lg font-bold bg-gray-200 text-gray-700 transition-all">🍺 ባርማን (Barman)</button>
+            <button onclick="switchRole('waiter')" id="btn-waiter" class="px-5 py-2.5 rounded-lg font-bold bg-gray-200 text-gray-700 transition-all">🍽️ አስተናጋጅ (Waiter)</button>
+            <button onclick="switchRole('customer')" id="btn-customer" class="px-5 py-2.5 rounded-lg font-bold bg-gray-200 text-gray-700 transition-all">📱 የደንበኛ QR ገጽ (Customer)</button>
+            
+            <div class="flex items-center gap-1 ml-4 border-l pl-4 bg-gray-50 p-1.5 rounded-lg">
+                <label class="text-xs font-bold text-gray-600">ለሙከራ ጠረጴዛ ቀይር፦</label>
+                <select id="simulatedTableSelect" onchange="changeSimulatedTable()" class="border text-xs rounded p-1 bg-white font-bold">
+                    </select>
+            </div>
+        </div>
+
+        <div id="view-owner" class="space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-xl border-t-4 border-amber-500">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800 flex items-center gap-2">🔑 የባለቤት መቆጣጠሪያ ፓነል</h2>
+                
+                <div class="p-4 bg-amber-50 rounded-xl border border-amber-200 mb-6">
+                    <h3 class="font-bold text-amber-900 mb-2 flex items-center gap-1">📢 የተንቀሳቃሽ ማስታወቂያ መለጠፊያ ካርድ</h3>
+                    <div class="flex gap-2">
+                        <input type="text" id="marqueeTextInput" placeholder="በላይኛው መስመር ላይ እንዲሮጥ የሚፈልጉትን አዲስ ማስታወቂያ እዚህ ይፃፉ..." class="border p-2.5 rounded-lg w-full text-sm bg-white shadow-sm">
+                        <button onclick="updateMarqueeText()" class="bg-amber-600 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow hover:bg-amber-700 shrink-0">ማስታወቂያ ለጥፍ</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <h3 class="font-bold mb-2 text-amber-800">👤 አዲስ ባርማን መፍጠሪያ</h3>
+                        <div class="flex space-x-2">
+                            <input type="text" id="newBarmanName" placeholder="የባርማን ስም" class="border p-2 rounded-lg w-full text-sm bg-white">
+                            <button onclick="createStaff('barman')" class="bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-amber-700">ፍጠር</button>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <h3 class="font-bold mb-2 text-amber-800">👤 አዲስ አስተናጋጅ መፍጠሪያ</h3>
+                        <div class="flex space-x-2">
+                            <input type="text" id="newWaiterName" placeholder="የአስተናጋጅ ስም" class="border p-2 rounded-lg w-full text-sm bg-white">
+                            <button onclick="createStaff('waiter')" class="bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-amber-700">ፍጠር</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 mb-6">
+                    <h3 class="font-bold mb-2 text-amber-800">📦 የአገልግሎት/ዕቃ መመዝገቢያ ስቶር</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
+                        <input type="text" id="itemCode" placeholder="የእቃ ኮድ (ለምሳሌ፦ B1)" class="border p-2 rounded-lg text-sm bg-white">
+                        <input type="text" id="itemName" placeholder="የአገልግሎት አይነት" class="border p-2 rounded-lg text-sm bg-white">
+                        <input type="number" id="itemCost" placeholder="የገባበት ዋጋ (ኮስት)" class="border p-2 rounded-lg text-sm bg-white">
+                        <input type="number" id="itemPrice" placeholder="የመሸጫ ዋጋ" class="border p-2 rounded-lg text-sm bg-white">
+                        <input type="number" id="itemInitialStock" placeholder="የመጀመሪያ ክምችት" class="border p-2 rounded-lg text-sm bg-white">
+                    </div>
+                    <button onclick="addItemToStore()" class="bg-green-600 text-white px-5 py-2.5 rounded-lg font-bold text-sm w-full md:w-auto shadow hover:bg-green-700">ወደ ስቶር አስገባ</button>
+                    
+                    <div class="mt-4">
+                        <button onclick="toggleVisibility('storeListContainer')" class="text-amber-600 font-bold underline text-sm flex items-center gap-1">📊 የስቶር ዕቃዎች እና የክምችት ዝርዝር (ለመክፈት/ለመዝጋት ይንኩ)</button>
+                        <div id="storeListContainer" class="hidden mt-2 overflow-x-auto">
+                            <table class="min-w-full bg-white border text-sm text-left rounded-lg overflow-hidden">
+                                <thead class="bg-gray-200 text-gray-700 font-bold">
+                                    <tr>
+                                        <th class="p-2 border">ኮድ</th>
+                                        <th class="p-2 border">የአገልግሎት አይነት</th>
+                                        <th class="p-2 border">የገባበት ዋጋ</th>
+                                        <th class="p-2 border">የመሸጫ ዋጋ</th>
+                                        <th class="p-2 border">የቀረው ክምችት (Stock)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="storeTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-5 bg-amber-50 rounded-2xl border border-amber-200 mb-6">
+                    <h3 class="font-bold text-lg text-amber-900 mb-3">📈 የትርፍ መገለጫ ቦክስ (ፋይናንስ ሪፖርት)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 text-center">
+                        <div class="bg-white p-3 rounded-xl shadow border border-amber-100"><span class="block text-xs text-gray-500 font-bold">የዛሬ ትርፍ</span><span id="dailyProfit" class="text-xl font-bold text-green-600">0 ብር</span></div>
+                        <div class="bg-white p-3 rounded-xl shadow border border-amber-100"><span class="block text-xs text-gray-500 font-bold">የዚህ ሳምንት ትርፍ</span><span id="weeklyProfit" class="text-xl font-bold text-blue-600">0 ብር</span></div>
+                        <div class="bg-white p-3 rounded-xl shadow border border-amber-100"><span class="block text-xs text-gray-500 font-bold">የዚህ ወር ትርፍ</span><span id="monthlyProfit" class="text-xl font-bold text-purple-600">0 ብር</span></div>
+                        <div class="bg-white p-3 rounded-xl shadow border border-amber-100"><span class="block text-xs text-gray-500 font-bold">የዚህ ዓመት ትርፍ</span><span id="yearlyProfit" class="text-xl font-bold text-orange-600">0 ብር</span></div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">የሪፖርት ማጣሪያ ምርጫ፦</label>
+                            <select id="ownerReportFilter" onchange="renderOwnerProfitReport()" class="w-full border p-2 rounded-lg text-sm bg-gray-50">
+                                <option value="all">ሁሉንም አሳይ</option>
+                                <option value="daily">የዛሬ ብቻ</option>
+                                <option value="weekly">የሳምንት ብቻ</option>
+                                <option value="monthly">የወር ብቻ</option>
+                                <option value="yearly">የዓመት ብቻ</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="downloadExcel('ownerReportTable', 'Owner_Detailed_Profit_Report')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold w-full shadow hover:bg-blue-700 transition-all">📥 ሪፖርት በኤክሴል አውርድ (Excel)</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table id="ownerReportTable" class="min-w-full bg-white border text-sm text-left rounded-lg overflow-hidden">
+                            <thead class="bg-gray-100 text-gray-700">
+                                <tr>
+                                    <th class="p-2 border">ተ.ቁ</th>
+                                    <th class="p-2 border">የአገልግሎት አይነት</th>
+                                    <th class="p-2 border">የገባበት ዋጋ (ኮስት)</th>
+                                    <th class="p-2 border">የተሸጠበት ዋጋ</th>
+                                    <th class="p-2 border">የተሸጠው ብዛት</th>
+                                    <th class="p-2 border">ጠቅላላ ትርፍ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ownerReportBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 mb-6">
+                    <h3 class="font-bold text-gray-800 mb-2">📊 የአስተናጋጆች እንቅስቃሴ እና የዕዳ ማጽጃ (Settlement)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border text-sm text-left rounded-lg overflow-hidden">
+                            <thead class="bg-gray-200">
+                                <tr>
+                                    <th class="p-2 border">አይዲ (ID)</th>
+                                    <th class="p-2 border">የአስተናጋጅ ስም</th>
+                                    <th class="p-2 border">የዕለት ጠቅላላ ሽያጭ</th>
+                                    <th class="p-2 border">ያለባት እዳ (ከባር የተጫነ)</th>
+                                    <th class="p-2 border">እርምጃ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ownerWaiterSettlementBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-4 bg-red-50 rounded-xl border border-red-200">
+                        <h3 class="font-bold text-red-800 mb-2">⚠️ ከአስተናጋጆች የመጡ የቅሬታ መልዕክቶች</h3>
+                        <div id="complaintsContainer" class="space-y-2 text-sm"></div>
+                    </div>
+
+                    <div class="p-4 bg-blue-50 rounded-xl border border-blue-200">
+                        <h3 class="font-bold text-blue-800 mb-2">💬 ከደንበኞች የተላኩ አጫጭር አስተያየቶች</h3>
+                        <div id="feedbacksContainer" class="space-y-2 text-sm max-h-60 overflow-y-auto">
+                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-barman" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-xl border-t-4 border-indigo-600">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800 flex items-center gap-2">🍺 የባርማን ማዘዣ እና ዕቃ መስጫ ቦክስ</h2>
+                
+                <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 mb-6">
+                    <h3 class="font-bold text-indigo-800 mb-2">📦 ለአስተናጋጅ ዕቃ መጫኛ (ዕዳ መመዝገቢያ)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">ባርማን ይምረጡ</label>
+                            <select id="barmanActiveSelect" class="w-full border p-2 rounded-lg text-sm bg-white"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">አስተናጋጅ ምረጥ</label>
+                            <select id="barmanSelectWaiter" class="w-full border p-2 rounded-lg text-sm bg-white"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">የአገልግሎት አይነት (ዕቃ)</label>
+                            <select id="barmanSelectItem" class="w-full border p-2 rounded-lg text-sm bg-white"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">ብዛት</label>
+                            <input type="number" id="barmanItemQty" value="1" min="1" class="w-full border p-2 rounded-lg text-sm bg-white">
+                        </div>
+                    </div>
+                    <button onclick="issueItemToWaiter()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow hover:bg-indigo-700">ዕቃውን ለአስተናጋጅ ጫን (ዕዳ መዝግብ)</button>
+                </div>
+
+                <div class="p-4 bg-orange-50 rounded-xl border border-orange-200 mb-6">
+                    <h3 class="font-bold text-orange-800 mb-2">🔔 ከደንበኞች (QR) የመጡ የቀጥታ ትዕዛዞች ማሳወቂያ</h3>
+                    <div id="incomingOrdersContainer" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+                </div>
+
+                <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                    <h3 class="font-bold text-indigo-800 mb-2">🔍 የአስተናጋጆች ዕቃ ርክክብ ማመሳከሪያ (ስም በመንካት ይመልከቱ)</h3>
+                    <div id="barmanWaiterButtons" class="flex flex-wrap gap-2 mb-4"></div>
+                    
+                    <div id="barmanWaiterDetailBox" class="hidden p-4 bg-white border rounded-xl shadow-inner">
+                        <h4 id="barmanSelectedWaiterTitle" class="font-bold text-sm mb-2 text-gray-800"></h4>
+                        <table class="min-w-full bg-white border text-xs text-left">
+                            <thead class="bg-gray-100 text-gray-700">
+                                <tr>
+                                    <th class="p-2 border">የእቃ ስም</th>
+                                    <th class="p-2 border">ብዛት</th>
+                                    <th class="p-2 border">ያንዱ ዋጋ</th>
+                                    <th class="p-2 border">ጠቅላላ ዋጋ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="barmanWaiterDetailTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-waiter" class="hidden space-y-6">
+            <div class="lemon-orange-bg p-6 rounded-2xl shadow-xl border-b-4 border-orange-500">
+                <h2 class="text-xl font-bold text-gray-900 text-center">ትርፍማነት ለ እርስዎም የስራ እድል መፈጠር ነው</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div class="bg-white p-4 rounded-xl shadow border border-orange-200">
+                        <button onclick="toggleVisibility('waiterDebtDetailsBlock')" class="w-full text-left font-bold text-red-600 flex justify-between items-center focus:outline-none">
+                            <span class="flex items-center gap-1">🛑 የእኔ እዳ (ባርማኑ የጫነብኝ)፦ <span id="waiterDebtTotalDisplay" class="text-lg font-black underline">0</span> ብር</span>
+                            <span class="text-xs underline bg-red-100 px-2 py-1 rounded">ዝርዝር ለማየት ይንኩ</span>
+                        </button>
+                        <div id="waiterDebtDetailsBlock" class="hidden mt-3 text-xs space-y-2">
+                            <table class="min-w-full bg-white border">
+                                <thead class="bg-gray-100">
+                                    <tr><th class="p-1 border">ዕቃ</th><th class="p-1 border">ብዛት</th><th class="p-1 border">ዋጋ</th></tr>
+                                </thead>
+                                <tbody id="waiterDebtTableBody"></tbody>
+                            </table>
+                            <div class="p-3 bg-red-50 border border-red-200 rounded-lg mt-2">
+                                <p class="font-bold text-red-700 mb-1">ያልተረከቡት እቃ ካለ ቅሬታ ማቅረቢያ</p>
+                                <div class="flex space-x-1">
+                                    <select id="complaintItemSelect" class="border p-1.5 rounded text-xs w-1/2 bg-white"></select>
+                                    <input type="number" id="complaintQty" placeholder="ብዛት" class="border p-1.5 rounded text-xs w-1/4 bg-white">
+                                    <button onclick="submitComplaint()" class="bg-red-600 text-white px-3 py-1.5 rounded text-xs font-bold shadow hover:bg-red-700">ላክ</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl shadow border border-orange-200 flex flex-col justify-between">
+                        <div>
+                            <p class="font-bold text-gray-800 text-base">📈 የእኔ የዛሬ ጠቅላላ ሽያጭ፦ <span id="waiterSalesDisplay" class="text-green-600 font-extrabold text-lg">0</span> ብር</p>
+                        </div>
+                        <button onclick="downloadExcel('waiterOrdersTable', 'My_Daily_Sales')" class="mt-2 bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg text-xs font-bold w-full shadow transition-all">📥 የዕለት ስራዬን በExcel አውርድ</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-lg border">
+                <h3 class="font-bold text-lg mb-3 text-gray-800">🍽️ የጠረጴዛ አገልግሎት መመዝገቢያ እና ማዘዣ ቦክስ</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4 bg-gray-50 p-3 rounded-xl border">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">የጠረጴዛ ቁጥር (1 - 30)</label>
+                        <input type="number" id="tableIdInput" min="1" max="30" placeholder="ለምሳሌ፦ 5" class="w-full border p-2 rounded-lg text-sm bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">የአገልግሎት አይነት</label>
+                        <select id="waiterSelectItem" class="w-full border p-2 rounded-lg text-sm bg-white"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">ብዛት</label>
+                        <input type="number" id="waiterItemQty" value="1" min="1" class="w-full border p-2 rounded-lg text-sm bg-white">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="addOrderToTable()" class="w-full bg-green-600 text-white py-2 rounded-lg font-bold text-sm shadow hover:bg-green-700 transition-all">አገልግሎት ጨምር/መዝግብ</button>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <h4 class="font-bold text-gray-800 mb-2">📋 የጠረጴዛዎች መከታተያ ዝርዝር (ለመክፈት/ለመዝጋት ይንኩ)</h4>
+                    <div id="tablesMonitorContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </div>
+            </div>
+            
+            <table id="waiterOrdersTable" class="hidden">
+                <thead><tr><th>የጠረጴዛ ቁጥር</th><th>የአገልግሎት አይነት</th><th>ብዛት</th><th>ያንዱ ዋጋ</th><th>ጠቅላላ ዋጋ</th></tr></thead>
+                <tbody id="waiterOrdersTableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="view-customer" class="hidden space-y-6">
+            <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-xl border-t-4 border-orange-500 space-y-4">
+                    <div class="lemon-orange-bg p-4 rounded-xl text-center shadow-sm">
+                        <h2 class="text-xl font-black text-gray-900">📱 ዲጂታል የQR ማዘዣ ገጽ</h2>
+                        <p class="text-sm font-bold text-gray-800 mt-1 bg-white/70 inline-block px-4 py-1 rounded-full border border-orange-300">
+                            📍 በአሁኑ ሰዓት የተቀመጡበት፦ <span id="customerCurrentTableLabel" class="text-orange-600 font-black text-lg">ጠረጴዛ 1</span>
+                        </p>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-xl border space-y-3">
+                        <h3 class="font-bold text-sm text-gray-800 flex items-center gap-1">🛒 የሚፈልጉትን ምግብ ወይም መጠጥ ይምረጡ፦</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div class="sm:col-span-2">
+                                <select id="customerItemSelect" class="w-full border p-2.5 rounded-lg bg-white text-sm font-medium"></select>
+                            </div>
+                            <div>
+                                <input type="number" id="customerItemQty" value="1" min="1" class="w-full border p-2.5 rounded-lg text-sm bg-white text-center font-bold" placeholder="ብዛት">
+                            </div>
+                        </div>
+                        <button onclick="submitCustomerOrderLive()" class="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-black text-sm shadow transition-all flex justify-center items-center gap-2">
+                            🚀 ትዕዛዙን ወደ ባርማን/አስተናጋጅ ላክ
+                        </button>
+                    </div>
+
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 space-y-2">
+                        <h3 class="font-bold text-xs text-blue-800 flex items-center gap-1">💬 ለአስተዳደሩ አጭር አስተያየት ወይም መልዕክት ይተውልን፦</h3>
+                        <div class="flex gap-2">
+                            <input type="text" id="customerFeedbackInput" placeholder="አገልግሎታችንን እንዴት አገኙት? አስተያየትዎን እዚህ ይፃፉ..." class="w-full border p-2 rounded-lg text-xs bg-white">
+                            <button onclick="submitFeedback()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold shrink-0 shadow">አስተያየት ላክ</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-xl border-l-4 border-green-500 h-fit space-y-4">
+                    <h3 class="font-black text-gray-800 text-base border-b pb-2 flex items-center gap-1 text-green-700">
+                        🧾 የእርስዎ የጠረጴዛ ወቅታዊ ሂሳብ (Live Update)
+                    </h3>
+                    
+                    <div id="customerLiveBillContainer" class="space-y-2 max-h-60 overflow-y-auto text-xs">
+                        </div>
+
+                    <div class="bg-green-50 p-3 rounded-xl border border-green-200 text-center">
+                        <span class="block text-xs text-gray-500 font-bold">ጠቅላላ የሚከፈል ሂሳብ</span>
+                        <span id="customerLiveTotalDisplay" class="text-2xl font-black text-green-600">0 ብር</span>
+                    </div>
+                    <p class="text-[10px] text-gray-400 text-center italic">ማሳሰቢያ፦ አዲስ ነገር ባዘዙ ቁጥር ይህ ሳጥን ወዲያውኑ ራሱን ያድሳል።</p>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <div id="checkoutModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl transition-all">
+            <h3 class="text-lg font-bold text-gray-800 flex items-center gap-1">🧾 የሂሳብ መዝጊያ እና ደረሰኝ ማረጋገጫ</h3>
+            <div id="checkoutDetails" class="text-sm text-gray-600 space-y-1 bg-gray-50 p-3 rounded-lg border"></div>
+            
+            <div>
+                <label class="block text-xs font-bold mb-1 text-gray-700">የክፍያ ዘዴ ይምረጡ፦</label>
+                <select id="paymentMethodSelect" onchange="toggleBankOptions()" class="w-full border p-2 rounded-lg text-sm bg-white">
+                    <option value="Cash">💵 በካሽ (Cash)</option>
+                    <option value="Bank">🏦 በባንክ (Digital Bank)</option>
+                </select>
+            </div>
+
+            <div id="bankOptionsBlock" class="hidden space-y-2">
+                <label class="block text-xs font-bold text-gray-600">ባንክ ይምረጡ፦</label>
+                <select id="bankNameSelect" class="w-full border p-2 rounded-lg text-sm bg-white">
+                    <option value="የኢትዮጵያ ንግድ ባንክ">የኢትዮጵያ ንግድ ባንክ (CBE)</option>
+                    <option value="አዋሽ ባንክ">አዋሽ ባንክ</option>
+                    <option value="አቢሲኒያ ባንክ">አቢሲኒያ ባንክ</option>
+                    <option value="ቴሌ ብር">ቴሌ ብር (telebirr)</option>
+                </select>
+                <input type="text" id="bankRefNumber" placeholder="የክፍያ ማረጋገጫ ሪፈረንስ ቁጥር (Ref No.)" class="w-full border p-2 rounded-lg text-sm bg-white">
+            </div>
+
+            <button onclick="confirmPaymentAndGenerateQR()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-bold text-sm shadow transition-all">ክፍያውን አረጋግጥና ደረሰኝ (QR) አውጣ</button>
+            
+            <div id="qrSection" class="hidden flex flex-col items-center p-3 bg-gray-50 rounded-xl border border-green-200">
+                <p class="text-xs font-bold text-green-700 mb-2">✅ ክፍያው በመረጡት መንገድ ተፈፅሟል!</p>
+                <div id="qrcode" class="p-2 bg-white rounded border shadow-sm"></div>
+                <button onclick="closeCheckoutModal()" class="mt-3 bg-gray-800 text-white text-xs px-5 py-2 rounded-lg font-bold shadow hover:bg-gray-900">ዝጋ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // የዳታ ማከማቻ (In-Memory Database)
+        let store = [
+            { code: 'B1', name: 'ሀበሻ ቢራ', cost: 50, price: 80, stock: 120 },
+            { code: 'B2', name: 'ዳሽን ቢራ', cost: 50, price: 80, stock: 100 },
+            { code: 'B3', name: 'ሀረር ቢራ', cost: 55, price: 85, stock: 80 },
+            { code: 'B4', name: 'በደሌ ቢራ', cost: 50, price: 80, stock: 90 },
+            { code: 'D1', name: 'ድራፍት ሲንግል', cost: 30, price: 50, stock: 200 },
+            { code: 'D2', name: 'ድራፍት ጃንቦ', cost: 50, price: 90, stock: 150 },
+            { code: 'F1', name: 'ሩብ ጥብስ', cost: 120, price: 200, stock: 50 },
+            { code: 'F2', name: 'ሺሮ', cost: 60, price: 100, stock: 60 },
+            { code: 'F3', name: 'ተጋቢኖ', cost: 80, price: 140, stock: 40 }
+        ];
+
+        let staff = {
+            owner: { id: 'OWN01', name: 'ባለቤት' },
+            barman: [{ id: 'BM01', name: 'ታሪኩ (ባርማን)' }],
+            waiter: [{ id: 'WT01', name: 'ሰብለ (አስተናጋጅ)' }]
+        };
+
+        let currentRole = 'owner';
+        let currentWaiterId = 'WT01';
+        let customerActiveTable = 1; // የደንበኛው የአሁኑ ጠረጴዛ (ነባሪ 1 ነው)
+        
+        let waiterDebts = {}; 
+        let tableOrders = {}; 
+        let liveCustomerOrders = []; 
+        let complaints = [];
+        let feedbacks = []; // [አዲስ] የደንበኞች አስተያየት ማጠራቀሚያ
+        let salesHistory = []; 
+
+        window.onload = function() {
+            initTableDropdowns();
+            updateDropdowns();
+            renderStoreTable();
+            renderOwnerSettlement();
+            renderTablesMonitor();
+            renderBarmanWaiterButtons();
+            renderOwnerProfitReport();
+            updateCustomerTableInterface(); // የደንበኛ ላይቭ ሂሳብ መጀመሪያውኑ እንዲታይ
+        };
+
+        function initTableDropdowns() {
+            let options = '';
+            for(let i=1; i<=30; i++) {
+                options += `<option value="${i}">ጠረጴዛ ቁጥር ${i}</option>`;
+            }
+            document.getElementById('simulatedTableSelect').innerHTML = options;
+        }
+
+        // ለሙከራ እንዲያመች ከላይ የጠረጴዛ ምርጫ ሲቀየር የሚሰራ
+        function changeSimulatedTable() {
+            customerActiveTable = parseInt(document.getElementById('simulatedTableSelect').value);
+            updateCustomerTableInterface();
+        }
+
+        // የደንበኛውን ገጽታ (የተቀመጡበትን ጠረጴዛ እና ላይቭ ሂሳብ) በየጊዜው አፕዴት ማድረጊያ
+        function updateCustomerTableInterface() {
+            // 1. ጠረጴዛውን መንገር
+            document.getElementById('customerCurrentTableLabel').innerText = `ጠረጴዛ ቁጥር ${customerActiveTable}`;
+            
+            // 2. በጎን በኩል ያሉትን ወቅታዊ የሂሳብ ዝርዝር እና ጠቅላላ ዋጋ (Live Update) መስራት
+            let container = document.getElementById('customerLiveBillContainer');
+            let totalDisplay = document.getElementById('customerLiveTotalDisplay');
+            
+            let order = tableOrders[customerActiveTable];
+            if (!order || order.status === 'closed' || order.items.length === 0) {
+                container.innerHTML = `<p class="text-gray-400 italic text-center py-4">በዚህ ጠረጴዛ ላይ እስካሁን የታዘዘ ምንም አገልግሎት የለም።</p>`;
+                totalDisplay.innerText = "0 ብር";
+            } else {
+                let grandTotal = 0;
+                let html = '<div class="space-y-1.5">';
+                order.items.forEach(item => {
+                    let cost = item.price * item.qty;
+                    grandTotal += cost;
+                    html += `
+                        <div class="flex justify-between items-center bg-gray-50 p-2 rounded border border-gray-100">
+                            <div>
+                                <span class="font-bold text-gray-800">${item.name}</span>
+                                <span class="text-[10px] text-gray-400 block">${item.price} ብር × ${item.qty}</span>
+                            </div>
+                            <span class="font-bold text-gray-700">${cost} ብር</span>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+                totalDisplay.innerText = grandTotal + " ብር";
+            }
+        }
+
+        // [ማሻሻያ 5] ባለቤቱ ማስታወቂያ የሚቀይርበት ህግ
+        function updateMarqueeText() {
+            let input = document.getElementById('marqueeTextInput').value.trim();
+            if(!input) return alert('እባክዎ የማስታወቂያ ፅሁፍ ያስገቡ!');
+            document.getElementById('dynamicMarquee').innerText = input;
+            alert('📢 ተንቀሳቃሽ ማስታወቂያው በስኬት ተለውጧል!');
+            document.getElementById('marqueeTextInput').value = '';
+        }
+
+        // [ማሻሻያ 4] ደንበኛው አስተያየት ሲልክ
+        function submitFeedback() {
+            let text = document.getElementById('customerFeedbackInput').value.trim();
+            if(!text) return alert('እባክዎ መጀመሪያ አስተያየትዎን ይፃፉ!');
+            
+            feedbacks.unshift({
+                tableId: customerActiveTable,
+                message: text,
+                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+            });
+            
+            alert('💬 አስተያየትዎ ለአስተዳደሩ ተልኳል! ስላነጋገሩን እናመሰግናለን።');
+            document.getElementById('customerFeedbackInput').value = '';
+            renderFeedbacksInOwner();
+        }
+
+        // በባለቤቱ ገጽ ላይ አስተያየቶችን ማሳያ
+        function renderFeedbacksInOwner() {
+            let container = document.getElementById('feedbacksContainer');
+            if (feedbacks.length === 0) {
+                container.innerHTML = `<p class="text-gray-500 italic">ምንም የተላከ አስተያየት የለም።</p>`;
+                return;
+            }
+            container.innerHTML = feedbacks.map(f => `
+                <div class="bg-white p-2.5 rounded-lg shadow-sm border border-blue-100">
+                    <div class="flex justify-between font-bold text-blue-900 text-[11px] mb-0.5">
+                        <span>📍 ጠረጴዛ ቁጥር ${f.tableId}</span>
+                        <span class="text-gray-400 font-normal">${f.time}</span>
+                    </div>
+                    <p class="text-gray-700 text-xs">${f.message}</p>
+                </div>
+            `).join('');
+        }
+
+        // ሚና ለመቀየር
+        function switchRole(role) {
+            currentRole = role;
+            document.getElementById('view-owner').classList.add('hidden');
+            document.getElementById('view-barman').classList.add('hidden');
+            document.getElementById('view-waiter').classList.add('hidden');
+            document.getElementById('view-customer').classList.add('hidden');
+            
+            document.getElementById('btn-owner').className = "px-5 py-2.5 rounded-lg font-bold bg-gray-200 text-gray-700";
+            document.getElementById('btn-barman').className = "px-5 py-2.5 rounded-lg font-bold bg-gray-200 text-gray-700";
+            document.getElementById('btn-waiter').className = "px-5 py-2.5 rounded-lg font-bold bg-gray-200 text-gray-700";
+            document.getElementById('btn-customer').className = "px-5 py-2.5 rounded-lg font-bold bg-gray-200 text-gray-700";
+
+            if (role === 'owner') {
+                document.getElementById('view-owner').classList.remove('hidden');
+                document.getElementById('btn-owner').className = "px-5 py-2.5 rounded-lg font-bold bg-amber-500 text-white shadow";
+            } else if (role === 'barman') {
+                document.getElementById('view-barman').classList.remove('hidden');
+                document.getElementById('btn-barman').className = "px-5 py-2.5 rounded-lg font-bold bg-indigo-600 text-white shadow";
+            } else if (role === 'waiter') {
+                document.getElementById('view-waiter').classList.remove('hidden');
+                document.getElementById('btn-waiter').className = "px-5 py-2.5 rounded-lg font-bold bg-orange-500 text-white shadow";
+            } else if (role === 'customer') {
+                document.getElementById('view-customer').classList.remove('hidden');
+                document.getElementById('btn-customer').className = "px-5 py-2.5 rounded-lg font-bold bg-orange-500 text-white shadow";
+                updateCustomerTableInterface(); // ወደ ደንበኛ ሲገባ ላይቭ ዳታውን ያድሳል
+            }
+        }
+
+        function toggleVisibility(id) {
+            let el = document.getElementById(id);
+            el.classList.toggle('hidden');
+        }
+
+        function createStaff(role) {
+            let nameInput = role === 'barman' ? document.getElementById('newBarmanName') : document.getElementById('newWaiterName');
+            let name = nameInput.value.trim();
+            if (!name) return alert('እባክዎ ስም ያስገቡ');
+            
+            let id = (role === 'barman' ? 'BM' : 'WT') + String(staff[role].length + 1).padStart(2, '0');
+            staff[role].push({ id: id, name: name });
+            nameInput.value = '';
+            
+            alert(`በስኬት ተፈጥሯል! ስም: ${name}, መለያ ID: ${id}`);
+            updateDropdowns();
+            renderOwnerSettlement();
+            renderBarmanWaiterButtons();
+        }
+
+        function addItemToStore() {
+            let code = document.getElementById('itemCode').value.trim();
+            let name = document.getElementById('itemName').value.trim();
+            let cost = parseFloat(document.getElementById('itemCost').value);
+            let price = parseFloat(document.getElementById('itemPrice').value);
+            let initialStock = parseInt(document.getElementById('itemInitialStock').value) || 0;
+
+            if (!code || !name || isNaN(cost) || isNaN(price)) return alert('እባክዎ ሁሉንም መረጃዎች በትክክል ይሙሉ');
+
+            store.push({ code, name, cost, price, stock: initialStock });
+            alert('ዕቃው በስኬት ወደ ስቶር ገብቷል!');
+            
+            document.getElementById('itemCode').value = '';
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemCost').value = '';
+            document.getElementById('itemPrice').value = '';
+            document.getElementById('itemInitialStock').value = '';
+
+            renderStoreTable();
+            updateDropdowns();
+        }
+
+        function renderStoreTable() {
+            let tbody = document.getElementById('storeTableBody');
+            tbody.innerHTML = store.map(item => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-2 border font-mono font-bold">${item.code}</td>
+                    <td class="p-2 border">${item.name}</td>
+                    <td class="p-2 border">${item.cost} ብር</td>
+                    <td class="p-2 border">${item.price} ብር</td>
+                    <td class="p-2 border font-bold ${item.stock < 10 ? 'text-red-600 bg-red-50' : 'text-gray-700'}">${item.stock} ፍሬ</td>
+                </tr>
+            `).join('');
+        }
+
+        function updateDropdowns() {
+            let itemOptions = store.map(i => `<option value="${i.code}">${i.name} (${i.price} ብር)</option>`).join('');
+            document.getElementById('barmanSelectItem').innerHTML = itemOptions;
+            document.getElementById('waiterSelectItem').innerHTML = itemOptions;
+            document.getElementById('complaintItemSelect').innerHTML = itemOptions;
+            document.getElementById('customerItemSelect').innerHTML = itemOptions;
+
+            let waiterOptions = staff.waiter.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+            document.getElementById('barmanSelectWaiter').innerHTML = waiterOptions;
+
+            let barmanOptions = staff.barman.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+            document.getElementById('barmanActiveSelect').innerHTML = barmanOptions;
+        }
+
+        function issueItemToWaiter() {
+            let waiterId = document.getElementById('barmanSelectWaiter').value;
+            let itemCode = document.getElementById('barmanSelectItem').value;
+            let qty = parseInt(document.getElementById('barmanItemQty').value);
+
+            if (qty <= 0 || isNaN(qty)) return alert('እባክዎ ትክክለኛ ብዛት ያስገቡ');
+
+            let storeItem = store.find(i => i.code === itemCode);
+            if (storeItem.stock < qty) {
+                return alert(`📦 በቂ ክምችት የለም! በስቶር ውስጥ ያለው ቀሪ፦ ${storeItem.stock}`);
+            }
+
+            storeItem.stock -= qty;
+
+            if (!waiterDebts[waiterId]) waiterDebts[waiterId] = [];
+            let existing = waiterDebts[waiterId].find(d => d.itemCode === itemCode);
+            
+            if (existing) {
+                existing.qty += qty;
+            } else {
+                waiterDebts[waiterId].push({ itemCode, qty, price: storeItem.price });
+            }
+
+            alert(`ዕቃው ለአስተናጋጁ ተጭኗል! ከስቶር ላይ ቀንሷል።`);
+            renderStoreTable();
+            renderWaiterDebtSection();
+            renderOwnerSettlement();
+            renderBarmanWaiterButtons();
+        }
+
+        function renderWaiterDebtSection() {
+            let debts = waiterDebts[currentWaiterId] || [];
+            let totalDebt = 0;
+            let tbody = document.getElementById('waiterDebtTableBody');
+            
+            tbody.innerHTML = debts.map(d => {
+                let item = store.find(i => i.code === d.itemCode);
+                let lineTotal = d.qty * d.price;
+                totalDebt += lineTotal;
+                return `
+                    <tr class="border-b">
+                        <td class="p-2">${item ? item.name : d.itemCode}</td>
+                        <td class="p-2 text-center font-bold">${d.qty}</td>
+                        <td class="p-2 text-right font-bold">${lineTotal} ብር</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('waiterDebtTotalDisplay').innerText = totalDebt;
+        }
+
+        function submitComplaint() {
+            let itemCode = document.getElementById('complaintItemSelect').value;
+            let qty = parseInt(document.getElementById('complaintQty').value);
+            let waiterName = staff.waiter.find(w => w.id === currentWaiterId).name;
+
+            if (qty <= 0 || isNaN(qty)) return alert('እባክዎ የቅሬታ ብዛትን ይግለጹ');
+
+            let item = store.find(i => i.code === itemCode);
+            complaints.push({
+                waiterId: currentWaiterId,
+                waiterName: waiterName,
+                itemName: item.name,
+                qty: qty
+            });
+
+            alert('ቅሬታሽ ተልኳል');
+            document.getElementById('complaintQty').value = '';
+            renderComplaints();
+        }
+
+        function renderComplaints() {
+            let container = document.getElementById('complaintsContainer');
+            if (complaints.length === 0) {
+                container.innerHTML = `<p class="text-gray-500 italic">ምንም የመጣ ቅሬታ የለም።</p>`;
+                return;
+            }
+            container.innerHTML = complaints.map((c, idx) => `
+                <div class="bg-white p-3 rounded-lg shadow border-l-4 border-red-500 flex justify-between items-center">
+                    <span>⚠️ <strong>${c.waiterName}</strong>: ${c.itemName} (ብዛት: ${c.qty}) ላይ ቅሬታ አቅርቧል።</span>
+                    <button onclick="dismissComplaint(${idx})" class="text-xs bg-red-600 text-white px-3 py-1 rounded-lg font-bold">አጽዳ</button>
+                </div>
+            `).join('');
+        }
+
+        function dismissComplaint(idx) {
+            complaints.splice(idx, 1);
+            renderComplaints();
+        }
+
+        function addOrderToTable() {
+            let tableId = document.getElementById('tableIdInput').value.trim();
+            let itemCode = document.getElementById('waiterSelectItem').value;
+            let qty = parseInt(document.getElementById('waiterItemQty').value);
+
+            if (!tableId || qty <= 0 || isNaN(qty)) return alert('እባክዎ የጠረጴዛ ቁጥር እና ብዛት በትክክል ያስገቡ');
+            if (parseInt(tableId) < 1 || parseInt(tableId) > 30) return alert('የጠረጴዛ ቁጥር ከ 1 እስከ 30 መሆን አለበት');
+
+            if (tableOrders[tableId] && tableOrders[tableId].status === 'open' && tableOrders[tableId].waiterId !== currentWaiterId) {
+                return alert('ይህ ጠረጴዛ በአሁኑ ሰዓት በሌላ አስተናጋጅ የተያዘ ስለሆነ መጠቀም አይችሉም!');
+            }
+
+            if (!tableOrders[tableId] || tableOrders[tableId].status === 'closed') {
+                tableOrders[tableId] = { items: [], waiterId: currentWaiterId, status: 'open' };
+            }
+
+            let storeItem = store.find(i => i.code === itemCode);
+            let existingItem = tableOrders[tableId].items.find(i => i.code === itemCode);
+
+            if (existingItem) {
+                existingItem.qty += qty;
+            } else {
+                tableOrders[tableId].items.push({
+                    code: itemCode,
+                    name: storeItem.name,
+                    price: storeItem.price,
+                    qty: qty
+                });
+            }
+
+            alert(`አገልግሎት ለጠረጴዛ ${tableId} ተጨምሯል!`);
+            renderTablesMonitor();
+            updateCustomerTableInterface(); // የደንበኛውን ላይቭ ሂሳብ ወዲያው ያድሳል
+        }
+
+        function renderTablesMonitor() {
+            let container = document.getElementById('tablesMonitorContainer');
+            container.innerHTML = '';
+
+            let openTables = Object.keys(tableOrders).filter(tid => tableOrders[tid].status === 'open');
+
+            if (openTables.length === 0) {
+                container.innerHTML = `<p class="text-sm text-gray-600 italic">በአሁኑ ሰዓት ምንም የተከፈተ ጠረጴዛ የለም።</p>`;
+                return;
+            }
+
+            openTables.forEach(tableId => {
+                let order = tableOrders[tableId];
+                let grandTotal = order.items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                
+                let card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-xl shadow border-l-4 border-green-500 cursor-pointer transition-all hover:shadow-md";
+                
+                card.innerHTML = `
+                    <div onclick="toggleVisibility('table-details-${tableId}')" class="flex justify-between items-center font-bold">
+                        <span class="text-gray-800">🍽️ ጠረጴዛ ቁጥር: ${tableId}</span>
+                        <span class="text-green-600">ጠቅላላ ድምር: ${grandTotal} ብር</span>
+                    </div>
+                    <div id="table-details-${tableId}" class="hidden mt-3 pt-3 border-t text-xs space-y-2">
+                        <table class="w-full text-left border">
+                            <thead>
+                                <tr class="bg-gray-100"><th class="p-1 border">አገልግሎት</th><th class="p-1 border">ዋጋ</th><th class="p-1 border">ብዛት</th><th class="p-1 border">ድምር</th></tr>
+                            </thead>
+                            <tbody>
+                                ${order.items.map(item => `
+                                    <tr>
+                                        <td class="p-1 border">${item.name}</td>
+                                        <td class="p-1 border">${item.price} ብር</td>
+                                        <td class="p-1 border text-center">${item.qty}</td>
+                                        <td class="p-1 border font-bold text-right">${item.price * item.qty} ብር</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        <button onclick="openCheckoutModal('${tableId}')" class="w-full mt-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg text-center shadow">🧾 ሂሳብ ዝጋ</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            renderWaiterOrdersTableOnly();
+        }
+
+        function renderWaiterOrdersTableOnly() {
+            let tbody = document.getElementById('waiterOrdersTableBody');
+            let waiterSales = 0;
+            tbody.innerHTML = '';
+
+            Object.keys(tableOrders).forEach(tableId => {
+                let order = tableOrders[tableId];
+                if (order.waiterId === currentWaiterId && order.status === 'open') {
+                    order.items.forEach(item => {
+                        waiterSales += (item.price * item.qty);
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${tableId}</td>
+                                <td>${item.name}</td>
+                                <td>${item.qty}</td>
+                                <td>${item.price}</td>
+                                <td>${item.price * item.qty}</td>
+                            </tr>
+                        `;
+                    });
+                }
+            });
+            document.getElementById('waiterSalesDisplay').innerText = waiterSales;
+        }
+
+        // [ማሻሻያ 1] ደንበኛው በQR ገብቶ ቀጥታ ማዘዝ ሲሰራ
+        function submitCustomerOrderLive() {
+            let itemCode = document.getElementById('customerItemSelect').value;
+            let qty = parseInt(document.getElementById('customerItemQty').value);
+
+            if (qty <= 0 || isNaN(qty)) return alert('እባክዎ ትክክለኛ ብዛት ያስገቡ');
+
+            let storeItem = store.find(i => i.code === itemCode);
+            liveCustomerOrders.push({
+                tableId: customerActiveTable,
+                itemCode: itemCode,
+                itemName: storeItem.name,
+                qty: qty,
+                status: 'pending'
+            });
+
+            alert(`📱 ትዕዛዝዎ በተሳካ ሁኔታ ተልኳል! ለአስተናጋጅ እና ባርማን ደርሷል።`);
+            renderIncomingOrdersInBarman();
+        }
+
+        function renderIncomingOrdersInBarman() {
+            let container = document.getElementById('incomingOrdersContainer');
+            let pended = liveCustomerOrders.filter(o => o.status === 'pending');
+
+            if (pended.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 italic">ምንም አዲስ የመጣ ትዕዛዝ የለም።</p>`;
+                return;
+            }
+
+            container.innerHTML = pended.map((o, idx) => `
+                <div class="bg-white p-3 rounded-xl shadow border border-orange-200 text-xs">
+                    <p class="font-bold text-gray-800">🍽️ ጠረጴዛ ${o.tableId}</p>
+                    <p class="text-gray-600">${o.itemName} - ብዛት: ${o.qty}</p>
+                    <button onclick="approveLiveOrder(${idx})" class="w-full mt-2 bg-green-600 text-white py-1 rounded font-bold">አጽድቅና አዘጋጅ</button>
+                </div>
+            `).join('');
+        }
+
+        function approveLiveOrder(idx) {
+            let order = liveCustomerOrders[idx];
+            order.status = 'approved';
+
+            if (!tableOrders[order.tableId] || tableOrders[order.tableId].status === 'closed') {
+                tableOrders[order.tableId] = { items: [], waiterId: 'WT01', status: 'open' };
+            }
+
+            let storeItem = store.find(i => i.code === order.itemCode);
+            let existing = tableOrders[order.tableId].items.find(i => i.code === order.itemCode);
+
+            if (existing) {
+                existing.qty += order.qty;
+            } else {
+                tableOrders[order.tableId].items.push({
+                    code: order.itemCode,
+                    name: storeItem.name,
+                    price: storeItem.price,
+                    qty: order.qty
+                });
+            }
+
+            alert(`ትዕዛዙ ጸድቋል! ወደ ጠረጴዛ ${order.tableId} ሂሳብ ተጨምሯል።`);
+            renderIncomingOrdersInBarman();
+            renderTablesMonitor();
+            updateCustomerTableInterface(); // የደንበኛውን ሳጥን አፕዴት ያደርጋል
+        }
+
+        let activeCheckoutTableId = '';
+        function openCheckoutModal(tableId) {
+            activeCheckoutTableId = tableId;
+            let order = tableOrders[tableId];
+            let grandTotal = order.items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            
+            let detailsHtml = `
+                <p><strong>የጠረጴዛ ቁጥር:</strong> ${tableId}</p>
+                <p class="text-base font-bold text-gray-800"><strong>ጠቅላላ ክፍያ:</strong> ${grandTotal} ብር</p>
+            `;
+            document.getElementById('checkoutDetails').innerHTML = detailsHtml;
+            document.getElementById('paymentMethodSelect').value = 'Cash';
+            document.getElementById('bankOptionsBlock').classList.add('hidden');
+            document.getElementById('qrSection').classList.add('hidden');
+            document.getElementById('qrcode').innerHTML = '';
+            
+            document.getElementById('checkoutModal').classList.remove('hidden');
+        }
+
+        function toggleBankOptions() {
+            let method = document.getElementById('paymentMethodSelect').value;
+            if (method === 'Bank') {
+                document.getElementById('bankOptionsBlock').classList.remove('hidden');
+            } else {
+                document.getElementById('bankOptionsBlock').classList.add('hidden');
+            }
+        }
+
+        function confirmPaymentAndGenerateQR() {
+            let tableId = activeCheckoutTableId;
+            let order = tableOrders[tableId];
+            let grandTotal = order.items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            
+            let method = document.getElementById('paymentMethodSelect').value;
+            let bankName = method === 'Bank' ? document.getElementById('bankNameSelect').value : 'N/A';
+            let refNo = method === 'Bank' ? document.getElementById('bankRefNumber').value : 'N/A';
+
+            let waiterName = staff.waiter.find(w => w.id === order.waiterId).name;
+            let qrText = `ሆቴል: ዘመናዊ የሆቴል መቆጣጠሪያ\nጠረጴዛ: ${tableId}\n`;
+            order.items.forEach(i => {
+                qrText += `${i.name} x${i.qty} = ${i.price * i.qty} ብር\n`;
+            });
+            qrText += `ጠቅላላ ዋጋ: ${grandTotal} ብር\nአስተናጋጅ: ${waiterName}\nእኛን መርጠው ስለመጡ እናመሰግናለን!!`;
+
+            document.getElementById('qrcode').innerHTML = '';
+            new QRCode(document.getElementById("qrcode"), {
+                text: qrText,
+                width: 140,
+                height: 140
+            });
+
+            document.getElementById('qrSection').classList.remove('hidden');
+
+            let profitTotal = 0;
+            order.items.forEach(item => {
+                let sItem = store.find(i => i.code === item.code);
+                let costPrice = sItem ? sItem.cost : item.price;
+                profitTotal += (item.price - costPrice) * item.qty;
+            });
+
+            salesHistory.push({
+                waiterId: order.waiterId,
+                tableId: tableId,
+                items: [...order.items],
+                total: grandTotal,
+                profit: profitTotal,
+                date: new Date(),
+                method: method,
+                bank: bankName,
+                ref: refNo
+            });
+
+            tableOrders[tableId].status = 'closed';
+            
+            renderOwnerProfitReport();
+            renderOwnerSettlement();
+            renderTablesMonitor();
+            updateCustomerTableInterface(); // ሂሳብ ሲዘጋ የደንበኛው ገጽ 0 እንዲሆን
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkoutModal').classList.add('hidden');
+        }
+
+        function renderOwnerProfitReport() {
+            let tbody = document.getElementById('ownerReportBody');
+            tbody.innerHTML = '';
+
+            let filter = document.getElementById('ownerReportFilter').value;
+            let now = new Date();
+
+            let daily = 0, weekly = 0, monthly = 0, yearly = 0;
+            let summary = {};
+
+            salesHistory.forEach(sale => {
+                let sDate = new Date(sale.date);
+                let diffTime = Math.abs(now - sDate);
+                let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                yearly += sale.profit;
+                if (diffDays <= 30) monthly += sale.profit;
+                if (diffDays <= 7) weekly += sale.profit;
+                if (sDate.toDateString() === now.toDateString()) daily += sale.profit;
+
+                let isMatch = false;
+                if (filter === 'all') isMatch = true;
+                if (filter === 'daily' && sDate.toDateString() === now.toDateString()) isMatch = true;
+                if (filter === 'weekly' && diffDays <= 7) isMatch = true;
+                if (filter === 'monthly' && diffDays <= 30) isMatch = true;
+                if (filter === 'yearly' && sDate.getFullYear() === now.getFullYear()) isMatch = true;
+
+                if (isMatch) {
+                    sale.items.forEach(item => {
+                        if (!summary[item.code]) {
+                            let sItem = store.find(i => i.code === item.code);
+                            summary[item.code] = {
+                                name: item.name,
+                                cost: sItem ? sItem.cost : item.price,
+                                price: item.price,
+                                qty: 0,
+                                profit: 0
+                            };
+                        }
+                        summary[item.code].qty += item.qty;
+                        summary[item.code].profit += (summary[item.code].price - summary[item.code].cost) * item.qty;
+                    });
+                }
+            });
+
+            document.getElementById('dailyProfit').innerText = daily + " ብር";
+            document.getElementById('weeklyProfit').innerText = weekly + " ብር";
+            document.getElementById('monthlyProfit').innerText = monthly + " ብር";
+            document.getElementById('yearlyProfit').innerText = yearly + " ብር";
+
+            let idx = 1;
+            for (let code in summary) {
+                let s = summary[code];
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-2 border text-center font-bold">${idx++}</td>
+                        <td class="p-2 border">${s.name}</td>
+                        <td class="p-2 border">${s.cost} ብር</td>
+                        <td class="p-2 border">${s.price} ብር</td>
+                        <td class="p-2 border text-center font-bold">${s.qty}</td>
+                        <td class="p-2 border font-bold text-green-600 text-right">${s.profit} ብር</td>
+                    </tr>
+                `;
+            }
+        }
+
+        function renderOwnerSettlement() {
+            let tbody = document.getElementById('ownerWaiterSettlementBody');
+            tbody.innerHTML = '';
+
+            staff.waiter.forEach(w => {
+                let sales = salesHistory.filter(s => s.waiterId === w.id).reduce((sum, s) => sum + s.total, 0);
+                let debts = waiterDebts[w.id] || [];
+                let totalDebt = debts.reduce((sum, d) => sum + (d.qty * d.price), 0);
+
+                tbody.innerHTML += `
+                    <tr class="border-b">
+                        <td class="p-2 border font-mono">${w.id}</td>
+                        <td class="p-2 border font-bold">${w.name}</td>
+                        <td class="p-2 border text-green-600 font-bold">${sales} ብር</td>
+                        <td class="p-2 border text-red-600 font-bold">${totalDebt} ብር</td>
+                        <td class="p-2 border">
+                            <button onclick="clearWaiterDebt('${w.id}')" class="bg-green-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow hover:bg-green-700">ሂሳብ ተረክቤያለሁ</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function clearWaiterDebt(waiterId) {
+            if (confirm('ከአስተናጋጁ ላይ ሙሉ ገንዘብ መረከብዎን ያረጋግጣሉ?')) {
+                waiterDebts[waiterId] = [];
+                alert('የአስተናጋጅ እዳ ጸድቷል!');
+                renderOwnerSettlement();
+                renderWaiterDebtSection();
+                renderBarmanWaiterButtons();
+            }
+        }
+
+        function renderBarmanWaiterButtons() {
+            let container = document.getElementById('barmanWaiterButtons');
+            container.innerHTML = staff.waiter.map(w => `
+                <button onclick="viewWaiterDebtInBarman('${w.id}')" class="bg-gray-100 hover:bg-gray-200 border px-3 py-1.5 rounded-lg text-xs font-bold text-gray-700 shadow-sm">
+                    ${w.name}
+                </button>
+            `).join('');
+        }
+
+        function viewWaiterDebtInBarman(waiterId) {
+            let box = document.getElementById('barmanWaiterDetailBox');
+            let title = document.getElementById('barmanSelectedWaiterTitle');
+            let tbody = document.getElementById('barmanWaiterDetailTableBody');
+
+            let w = staff.waiter.find(w => w.id === waiterId);
+            title.innerText = `🔍 የአስተናጋጅ ${w.name} የርክክብ ዝርዝር`;
+
+            let debts = waiterDebts[waiterId] || [];
+            if (debts.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-2 text-center text-gray-400 italic">ምንም የተጫነ ዕቃ የለም።</td></tr>`;
+            } else {
+                tbody.innerHTML = debts.map(d => {
+                    let item = store.find(i => i.code === d.itemCode);
+                    return `
+                        <tr>
+                            <td class="p-2 border">${item ? item.name : d.itemCode}</td>
+                            <td class="p-2 border text-center font-bold">${d.qty}</td>
+                            <td class="p-2 border">${d.price} ብር</td>
+                            <td class="p-2 border font-bold text-right">${d.qty * d.price} ብር</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+            box.classList.remove('hidden');
+        }
+
+        function downloadExcel(tableId, filename) {
+            let table = document.getElementById(tableId);
+            let wb = XLSX.utils.table_to_book(table, { sheet: "ሪፖርት" });
+            XLSX.writeFile(wb, `${filename}.xlsx`);
+        }
+    </script>
+</body>
+</html>
